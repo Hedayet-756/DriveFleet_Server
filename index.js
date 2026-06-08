@@ -4,7 +4,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express = require('express')
 const dotenv = require('dotenv')
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 dotenv.config()
 const uri = process.env.MONGODB_URI;
 const app = express()
@@ -38,6 +38,12 @@ async function run() {
             console.log(car);
             const result = await CarsCollection.insertOne(car);
 
+            res.json(result);
+        });
+
+        app.get('/addcar/:id', async (req, res) => {
+            const { id } = req.params;
+            const result = await CarsCollection.findOne({ _id: new ObjectId(id) });
             res.json(result);
         });
 

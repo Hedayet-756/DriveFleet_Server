@@ -47,6 +47,14 @@ async function run() {
             res.json(result);
         });
 
+        app.patch('/addcar/:id', async (req, res) => {
+            const { id } = req.params;
+            const updatedCar = req.body;
+            console.log(updatedCar);
+            const result = await CarsCollection.updateOne({ _id: new ObjectId(id) }, { $set: updatedCar });
+            res.json(result);
+        });
+
 
 
         await client.db("admin").command({ ping: 1 });

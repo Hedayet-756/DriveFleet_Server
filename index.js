@@ -50,8 +50,14 @@ async function run() {
         app.patch('/addcar/:id', async (req, res) => {
             const { id } = req.params;
             const updatedCar = req.body;
-            console.log(updatedCar);
+            // console.log(updatedCar);
             const result = await CarsCollection.updateOne({ _id: new ObjectId(id) }, { $set: updatedCar });
+            res.json(result);
+        });
+
+        app.delete('/addcar/:id', async (req, res) => {
+            const { id } = req.params;
+            const result = await CarsCollection.deleteOne({ _id: new ObjectId(id) });
             res.json(result);
         });
 

@@ -5,6 +5,7 @@ const express = require('express')
 const dotenv = require('dotenv')
 const cors = require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 dotenv.config()
 const uri = process.env.MONGODB_URI;
 const app = express()
@@ -21,9 +22,30 @@ const client = new MongoClient(uri, {
     }
 });
 
+const JWKS = createRemoteJWKSet(new URL(`${process.env.Client_URI}/api/auth/jwks`));
+
+const verifyToken = async (req, res, next) => {
+    const authHeader = req?.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    // console.log(token);
+    try {
+        const { payload } = await jwtVerify(token, JWKS);
+        console.log(payload);
+        next();
+    } catch (error) {
+        return res.status(403).json({ message: "forbidden" });
+    }
+};
+
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
 
         const db = client.db("drivefleet");
         const CarsCollection = db.collection("cars");
@@ -34,7 +56,7 @@ async function run() {
             res.json(result);
         });
 
-        app.post('/addcar', async (req, res) => {
+        app.post('/addcar', verifyToken, async (req, res) => {
             const car = req.body;
             console.log(car);
             const result = await CarsCollection.insertOne(car);
@@ -42,13 +64,13 @@ async function run() {
             res.json(result);
         });
 
-        app.get('/addcar/:id', async (req, res) => {
+        app.get('/addcar/:id', verifyToken, async (req, res) => {
             const { id } = req.params;
             const result = await CarsCollection.findOne({ _id: new ObjectId(id) });
             res.json(result);
         });
 
-        app.patch('/addcar/:id', async (req, res) => {
+        app.patch('/addcar/:id', verifyToken, async (req, res) => {
             const { id } = req.params;
             const updatedCar = req.body;
             // console.log(updatedCar);
@@ -56,33 +78,33 @@ async function run() {
             res.json(result);
         });
 
-        app.delete('/addcar/:id', async (req, res) => {
+        app.delete('/addcar/:id', verifyToken, async (req, res) => {
             const { id } = req.params;
             // console.log(id);
             const result = await CarsCollection.deleteOne({ _id: new ObjectId(id) });
             res.json(result);
         });
 
-        app.post('/bookings', async (req, res) => {
+        app.post('/bookings', verifyToken, async (req, res) => {
             const bookingData = req.body;
             // console.log(booking);
             const result = await bookingsCollection.insertOne(bookingData);
             res.json(result);
         });
 
-        app.get('/bookings/:userId', async (req, res) => {
+        app.get('/bookings/:userId', verifyToken, async (req, res) => {
             const { userId } = req.params;
             const result = await bookingsCollection.find({ userId: userId }).toArray();
             res.json(result);
         });
 
-        app.delete('/bookings/:bookingId', async (req, res) => {
+        app.delete('/bookings/:bookingId', verifyToken, async (req, res) => {
             const { bookingId } = req.params;
             const result = await bookingsCollection.deleteOne({ _id: new ObjectId(bookingId) });
             res.json(result);
         });
 
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
 

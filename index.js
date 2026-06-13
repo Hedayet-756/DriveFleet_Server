@@ -51,6 +51,11 @@ async function run() {
         const CarsCollection = db.collection("cars");
         const bookingsCollection = db.collection("bookings");
 
+        app.get('/featured', async (req, res) => {
+            const result = await CarsCollection.find({}).limit(4).toArray();
+            res.json(result);
+        });
+
         app.get('/addcar', async (req, res) => {
             const result = await CarsCollection.find({}).toArray();
             res.json(result);
@@ -99,9 +104,18 @@ async function run() {
         });
 
         app.delete('/bookings/:bookingId', verifyToken, async (req, res) => {
-            const { bookingId } = req.params;
-            const result = await bookingsCollection.deleteOne({ _id: new ObjectId(bookingId) });
-            res.json(result);
+            try {
+                const { bookingId } = req.params;
+                const result = await bookingsCollection.deleteOne({ _id: new ObjectId(bookingId) });
+
+                if (result.deletedCount === 0) {
+                    return res.status(404).json({ success: false, message: "Booking record not found in database!" });
+                }
+
+                res.json({ success: true, ...result });
+            } catch (error) {
+                res.status(500).json({ success: false, message: error.message });
+            }
         });
 
         // await client.db("admin").command({ ping: 1 });
